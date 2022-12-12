@@ -1,0 +1,14 @@
+C:\Projects\BeeEngine\BeeEngine\obj\Release\net7.0-windows\BeeEngine.csproj.AssemblyReference.cache
+C:\Projects\BeeEngine\BeeEngine\obj\Release\net7.0-windows\BeeEngine.Drawing.RazorPainterWFCtl.resources
+C:\Projects\BeeEngine\BeeEngine\obj\Release\net7.0-windows\BeeEngine.csproj.GenerateResource.cache
+C:\Projects\BeeEngine\BeeEngine\obj\Release\net7.0-windows\BeeEngine.GeneratedMSBuildEditorConfig.editorconfig
+C:\Projects\BeeEngine\BeeEngine\obj\Release\net7.0-windows\BeeEngine.AssemblyInfoInputs.cache
+C:\Projects\BeeEngine\BeeEngine\obj\Release\net7.0-windows\BeeEngine.AssemblyInfo.cs
+C:\Projects\BeeEngine\BeeEngine\obj\Release\net7.0-windows\BeeEngine.csproj.CoreCompileInputs.cache
+C:\Projects\BeeEngine\BeeEngine\bin\Release\net7.0-windows\BeeEngine.deps.json
+C:\Projects\BeeEngine\BeeEngine\bin\Release\net7.0-windows\BeeEngine.dll
+C:\Projects\BeeEngine\BeeEngine\bin\Release\net7.0-windows\BeeEngine.pdb
+C:\Projects\BeeEngine\BeeEngine\obj\Release\net7.0-windows\BeeEngine.dll
+C:\Projects\BeeEngine\BeeEngine\obj\Release\net7.0-windows\refint\BeeEngine.dll
+C:\Projects\BeeEngine\BeeEngine\obj\Release\net7.0-windows\BeeEngine.pdb
+C:\Projects\BeeEngine\BeeEngine\obj\Release\net7.0-windows\ref\BeeEngine.dll
