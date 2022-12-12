@@ -1,6 +1,7 @@
 ﻿global using System.Drawing;
 global using System.Drawing.Drawing2D;
 using BeeEngine.Collections;
+using GameEngine2D;
 
 namespace BeeEngine.Drawing
 {
@@ -27,7 +28,7 @@ namespace BeeEngine.Drawing
             //AllSprites.SortSprites();
             g.IsFrameGraphics = true;
             g.Clear(_instance.BackgroundColor);
-            Camera.Move(g);
+            Camera.Cameras.ForEach(camera => camera.Move(g));
             /*foreach(var sprite in AllSprites)
             {
                 lock(sprite)

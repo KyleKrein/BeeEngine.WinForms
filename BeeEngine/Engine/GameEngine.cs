@@ -84,7 +84,8 @@ public abstract class GameEngine
         _mainGameLoopThread.Start();
         _fixedGameLoopThread.Start();
         //FixedUpdateThread.Start();
-        Application.Run(Window);
+        if(Window is WinForm)
+            Application.Run(Window as WinForm);
     }
 
     public void Start()

@@ -15,4 +15,8 @@
       <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
 
+    <ItemGroup>
+      <Folder Include="Engine\EditorConnection" />
+    </ItemGroup>
+
 </Project>

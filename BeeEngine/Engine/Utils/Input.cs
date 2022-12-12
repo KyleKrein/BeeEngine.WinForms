@@ -54,11 +54,11 @@ namespace BeeEngine
             return new Vector2(MouseX, MouseY);
         }
 
-        public static Vector2 GetMouseWorldPosition()
+        /*public static Vector2 GetMouseWorldPosition()
         {
             if (GameApplication.Instance is null)
                 throw new NullReferenceException($"{nameof(GameApplication.Instance)} must be running");
             return new Vector2(MathU.Lerp(-Camera.OrthographicSize / 2, Camera.OrthographicSize / 2, MouseX / (float)GameApplication.Instance.Window.Width), MathU.Lerp(-Camera.OrthographicSize / 2, Camera.OrthographicSize / 2, MouseY / (float)GameApplication.Instance.Window.Height));
-        }
+        }*/
     }
 }

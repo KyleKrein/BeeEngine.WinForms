@@ -1,39 +1,71 @@
-﻿using BeeEngine.Drawing;
-using BeeEngine.Vector;
+﻿using BeeEngine;
 
-namespace BeeEngine;
+namespace GameEngine2D;
 
 [DebuggerDisplay("X: {Position.X}, Y: {Position.Y}, Scale: {Scale}")]
-public static class Camera
+public class Camera
 {
-    public static Vector2 Position { get; internal set; } = Vector2.Zero();
-    private static Vector2 _newPosition = Position;
-    public static float MaxZoomIn { get; private set; } = -1;
-    public static float MaxZoomOut { get; private set; } = -1;
-    public static float Scale { get; private set; } = 1.0f;
+    public static List<Camera> Cameras = new List<Camera>();
+    public Vector2 Position { get; internal set; } = Vector2.Zero();
+    private Vector2 _newPosition = Vector2.Zero();
+    public float MaxZoomIn { get; private set; } = -1;
+    public float MaxZoomOut { get; private set; } = -1;
+    public float Scale { get; private set; } = 1.0f;
 
-    private static Matrix _zoomMatrix = new Matrix(1, 0,
+    public Size Size
+    {
+        get => _size;
+        set
+        {
+            _size = value;
+            CenterPoint = new Vector2(value.Width / 2, value.Height / 2);
+            StateChanges();
+        }
+    }
+    Size _size = Size.Empty;
+
+    private Matrix _zoomMatrix = new Matrix(1, 0,
                                                   0, 1,
                                                   0, 0);
 
-    internal static float CameraAngle = 0;
-    public static float OrthographicSize { get; set; } = 10;
+    internal float CameraAngle = 0;
+    public float OrthographicSize { get; set; } = 10;
 
-    public static Vector4 Display
+    public Camera()
+    {
+        Cameras.Add(this);
+    }
+
+    public Camera(Vector2 position, Size size, float scale):this()
+    {
+        Position = position;
+        _newPosition = Position;
+        Scale = scale;
+        Size = size;
+    }
+
+    public Camera(Control control):this()
+    {
+        control.Resize += ((sender, args) => { Size = control.Size;});
+    }
+    ~Camera()
+    {
+        Cameras.Remove(this);
+    }
+
+    public Vector4 Bounds
     {
         get
         {
-            if (GameApplication.Instance is null)
-                return default(Vector4);
-            return new Vector4(-CenterPoint.X / Scale + Position.X, -CenterPoint.Y / Scale + Position.Y, GameApplication.Instance.Window.ClientSize.Width / Scale, GameApplication.Instance.Window.ClientSize.Height / Scale);
+            return new Vector4(-CenterPoint.X / Scale + Position.X, -CenterPoint.Y / Scale + Position.Y, Size.Width / Scale, Size.Height / Scale);
 
             //return new Vector4(CenterPoint.X / Scale + Position.X, CenterPoint.Y / Scale + Position.Y, GameApplication.Instance.Window.ClientSize.Width / Scale, GameApplication.Instance.Window.ClientSize.Height / Scale);
         }
     }
 
-    private static float DefaultSpeed = 1;
+    private float DefaultSpeed = 1;
 
-    public static bool UseFixedUpdate = true;
+    public bool UseFixedUpdate = true;
 
     public class CameraEventArgs
     {
@@ -51,17 +83,17 @@ public static class Camera
 
     public delegate void CameraMoved(CameraEventArgs e);
 
-    public static event CameraMoved StateChange;
+    public event CameraMoved StateChange;
 
-    public static WeakEvent<CameraEventArgs> WeakStateChange = new WeakEvent<CameraEventArgs>();
+    public WeakEvent<CameraEventArgs> WeakStateChange = new WeakEvent<CameraEventArgs>();
 
-    private static Vector2? startPosition;
-    private static Vector2? endPosition;
+    private Vector2? startPosition;
+    private Vector2? endPosition;
 
-    private static Vector4? GameWorld;
+    private Vector4? GameWorld;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void StateChanges()
+    private void StateChanges()
     {
         var eventArgs = new CameraEventArgs(Position, Scale);
         if (StateChange != null)
@@ -69,7 +101,7 @@ public static class Camera
         WeakStateChange.Invoke(null, eventArgs);
     }
 
-    public static bool SetScale(float scale)
+    public bool SetScale(float scale)
     {
         //if (scale <= 0)
         //    throw new Exception("Camera Scale set to a number that equals or less then zero");
@@ -84,7 +116,7 @@ public static class Camera
         return true;
     }
 
-    public static bool ChangeScale(float deltaScale)
+    public bool ChangeScale(float deltaScale)
     {
         float s = Scale + deltaScale;
         if (isScaleCorrect(s))
@@ -99,12 +131,12 @@ public static class Camera
         return false;
     }
 
-    public static void SetNewPosition(float x, float y)
+    public void SetNewPosition(float x, float y)
     {
         SetNewPosition(new Vector2(x, y));
     }
 
-    public static void SetNewPosition(Vector2 NewPosition)
+    public void SetNewPosition(Vector2 NewPosition)
     {
         if (IsInsideWorldBorders(NewPosition))
         {
@@ -117,12 +149,12 @@ public static class Camera
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool isScaleCorrect(float newScale)
+    private bool isScaleCorrect(float newScale)
     {
         return newScale > 0 && (MaxZoomOut == -1 || newScale >= MaxZoomOut) && (MaxZoomIn == -1 || newScale <= MaxZoomIn);
     }
 
-    public static void SetMaxZoomIn(float maxZoomIn)
+    public void SetMaxZoomIn(float maxZoomIn)
     {
         if (maxZoomIn == -1 || maxZoomIn > 0)
         {
@@ -138,7 +170,7 @@ public static class Camera
         }
     }
 
-    public static void SetMaxZoomOut(float maxZoomOut)
+    public void SetMaxZoomOut(float maxZoomOut)
     {
         if (maxZoomOut == -1 || maxZoomOut > 0)
         {
@@ -155,41 +187,41 @@ public static class Camera
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void SetDefaultSpeed(float speed)
+    public void SetDefaultSpeed(float speed)
     {
         DefaultSpeed = speed;
     }
 
-    public static void SetGameWorldCorners(Vector4 WorldSize)
+    public void SetGameWorldCorners(Vector4 WorldSize)
     {
         GameWorld = WorldSize;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static float Up()
+    public float Up()
     {
         return Up(DefaultSpeed);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static float Down()
+    public float Down()
     {
         return Down(DefaultSpeed);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static float Left()
+    public float Left()
     {
         return Left(DefaultSpeed);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static float Right()
+    public float Right()
     {
         return Right(DefaultSpeed);
     }
 
-    public static float Up(float speed)
+    public float Up(float speed)
     {
         var temp = new Vector2(Position.X, Position.Y + speed);
 
@@ -202,7 +234,7 @@ public static class Camera
         return 0;
     }
 
-    public static float Down(float speed)
+    public float Down(float speed)
     {
         var temp = new Vector2(Position.X, Position.Y - speed);
 
@@ -215,7 +247,7 @@ public static class Camera
         return 0;
     }
 
-    public static float Left(float speed)
+    public float Left(float speed)
     {
         var temp = new Vector2(Position.X + speed, Position.Y);
         if (IsInsideWorldBorders(temp))
@@ -227,7 +259,7 @@ public static class Camera
         return 0;
     }
 
-    public static float Right(float speed)
+    public float Right(float speed)
     {
         var temp = new Vector2(Position.X - speed, Position.Y);
         if (IsInsideWorldBorders(temp))
@@ -240,7 +272,7 @@ public static class Camera
         return 0;
     }
 
-    private static void StopGOTO()
+    private void StopGOTO()
     {
         if (startPosition != null && endPosition != null)
         {
@@ -250,7 +282,7 @@ public static class Camera
         }
     }
 
-    public static void TeleportTo(Vector2 coords)
+    public void TeleportTo(Vector2 coords)
     {
         if (IsInsideWorldBorders(coords))
         {
@@ -259,14 +291,14 @@ public static class Camera
         }
     }
 
-    public static void TeleportTo(float x, float y)
+    public void TeleportTo(float x, float y)
     {
         TeleportTo(new Vector2(x, y));
     }
 
-    public static float movementTime = 3f;
+    public float movementTime = 3f;
 
-    internal static void GoToWORK()
+    internal void GoToWORK()
     {
         float by = (float)(Time.deltaTime * movementTime);
         if (startPosition != null && endPosition != null)
@@ -286,7 +318,7 @@ public static class Camera
         StateChanges();
     }
 
-    private static bool delta(Vector2 a, Vector2 b, float d)
+    private bool delta(Vector2 a, Vector2 b, float d)
     {
         if (a.X < b.X + d &&
             a.X + d > b.X &&
@@ -299,7 +331,7 @@ public static class Camera
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void GoTo(Vector2 Destination)
+    public void GoTo(Vector2 Destination)
     {
         if (Position != Destination && IsInsideWorldBorders(Destination))
         {
@@ -310,7 +342,7 @@ public static class Camera
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void GoTo(float x, float y)
+    public void GoTo(float x, float y)
     {
         GoTo(new Vector2(x, y));
     }
@@ -325,7 +357,7 @@ public static class Camera
             new Vector4(Position.X, Position.Y, GameEngine.Window.Width, GameEngine.Window.Height));
     }*/
 
-    private static bool IsInsideWorldBorders(Vector2 newCameraPosition)
+    private bool IsInsideWorldBorders(Vector2 newCameraPosition)
     {
         if (GameWorld == null)
         {
@@ -335,23 +367,23 @@ public static class Camera
         return true;
     }
 
-    static Camera()
+    /*static Camera()
     {
         if (GameApplication.Instance is null)
             throw new InvalidOperationException($"{nameof(GameApplication.Instance)} can't be null when using Camera");
         CenterPoint = new Vector2(GameApplication.Instance.Window.ClientSize.Width / 2, GameApplication.Instance.Window.ClientSize.Height / 2);
         GameApplication.Instance.Window.ClientSizeChanged += Window_ClientSizeChanged;
-    }
+    }*/
 
-    private static void Window_ClientSizeChanged(object sender, EventArgs e)
+    private void Window_ClientSizeChanged(object sender, EventArgs e)
     {
         CenterPoint = new Vector2(GameApplication.Instance!.Window.ClientSize.Width / 2, GameApplication.Instance!.Window.ClientSize.Height / 2);
     }
 
-    internal static Vector2 CenterPoint;
+    internal Vector2 CenterPoint;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static void Move(Graphics g)
+    internal void Move(Graphics g)
     {
         Matrix matrix = new Matrix();
         matrix.Translate(CenterPoint.X, CenterPoint.Y);
@@ -364,11 +396,28 @@ public static class Camera
         //g.TranslateTransform(Position.X, Position.Y);
     }
 
-    internal static void Move(FastGraphics g)
+    internal void Move(FastGraphics g)
     {
         g.ResetTransform();
         g.TransformTranslate(CenterPoint);
         g.ScaleTransform(Scale);
         g.TransformTranslate(Position);
+    }
+
+    public void DrawFrame(Graphics g)
+    {
+        Move(g);
+        
+        g.ResetTransform();
+    }
+    public void DrawFrame(FastGraphics g)
+    {
+        Move(g);
+        
+        g.ResetTransform();
+    }
+    public void DrawFrame(Bitmap targetBitmap)
+    {
+        
     }
 }

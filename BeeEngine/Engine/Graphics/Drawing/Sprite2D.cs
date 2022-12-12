@@ -1,5 +1,6 @@
 ﻿using BeeEngine.GIF;
 using BeeEngine.Vector;
+using GameEngine2D;
 
 namespace BeeEngine.Drawing
 {
@@ -208,46 +209,6 @@ namespace BeeEngine.Drawing
             GC.SuppressFinalize(this);
         }
 
-        private void CameraScaleChanged(object? sender, Camera.CameraEventArgs e)
-        {
-            /*if(camScale == Camera.Scale)
-            {
-                return;
-            }
-            camScale = Camera.Scale;
-            */
-
-            /*
-            int sourceWidth = Sprite.Width;
-            int sourceHeight = Sprite.Height;
-            int sourceX = 0;
-            int sourceY = 0;
-
-            int destX = 0;
-            int destY = 0;
-            int destWidth = (int)(sourceWidth * camScale);
-            int destHeight = (int)(sourceHeight * camScale);
-
-            Bitmap bmPhoto = new Bitmap(destWidth, destHeight,
-                                     PixelFormat.Format32bppArgb);
-            bmPhoto.SetResolution(Sprite.HorizontalResolution,
-                                    Sprite.VerticalResolution);
-
-            Graphics g = Graphics.FromImage(bmPhoto);
-            g.SmoothingMode = SmoothingMode.None;
-            g.InterpolationMode = InterpolationMode.NearestNeighbor;
-            g.PixelOffsetMode = PixelOffsetMode.HighQuality;
-            g.CompositingQuality = CompositingQuality.AssumeLinear;
-
-            g.DrawImage(Sprite,
-                new Rectangle(destX, destY, destWidth, destHeight),
-                new Rectangle(sourceX, sourceY, sourceWidth, sourceHeight),
-                GraphicsUnit.Pixel);
-            Sprite.Dispose();
-            g.Dispose();
-            Sprite = bmPhoto;*/
-        }
-
         public override void Show()
         {
             if (GameApplication.Instance is null)
@@ -350,8 +311,8 @@ namespace BeeEngine.Drawing
 
         private Vector2 CoordsForEvents(MouseEventArgs e)
         {
-            return new Vector2(e.X - (Camera.CenterPoint.X * Camera.Scale) - Camera.Position.X,
-                e.Y - (Camera.CenterPoint.Y * Camera.Scale) - Camera.Position.Y);
+            return new Vector2(e.X - (Camera.Cameras[0].CenterPoint.X * Camera.Cameras[0].Scale) - Camera.Cameras[0].Position.X,
+                e.Y - (Camera.Cameras[0].CenterPoint.Y * Camera.Cameras[0].Scale) - Camera.Cameras[0].Position.Y);
         }
 
         private void Window_MouseDown(object? sender, MouseEventArgs e)

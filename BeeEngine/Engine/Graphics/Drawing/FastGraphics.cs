@@ -1,4 +1,5 @@
 ﻿using BeeEngine.Vector;
+using GameEngine2D;
 
 namespace BeeEngine.Drawing
 {
@@ -151,8 +152,8 @@ namespace BeeEngine.Drawing
 
         private bool HandleFrameGraphics(Bitmap image, Rectangle imageRect, Rectangle newPositionRect, Rectangle changedRect)
         {
-            changedRect.Width = (int) (changedRect.Width * Camera.Scale);
-            changedRect.Height = (int) (changedRect.Height * Camera.Scale);
+            changedRect.Width = (int) (changedRect.Width * _transform.ScaleX);
+            changedRect.Height = (int) (changedRect.Height * _transform.ScaleY);
             /*var display = new Rectangle((int) (-Camera.CenterPoint.X+_transform.X),
                 (int) (-Camera.CenterPoint.Y+_transform.Y),
                 (int) (GameApplication.Instance!.Window.ClientSize.Width),
@@ -173,7 +174,7 @@ namespace BeeEngine.Drawing
             //temp = ResamplingService.Resample(image.ToArray(), imageRect.Width, imageRect.Height).ConvertArrayToBitmap();
             //ResamplingService.Resample(image, imageRect.Width, imageRect.Height);
             //temp = new Bitmap(imageRect.Width, imageRect.Height);
-            Camera.Move(WinFormGraphics);
+            Camera.Cameras.ForEach(camera => camera.Move(WinFormGraphics));/*.Move(WinFormGraphics);*/
             WinFormGraphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
             WinFormGraphics.PixelOffsetMode = PixelOffsetMode.HighSpeed;
             WinFormGraphics.DrawImage(image, newPositionRect.X, newPositionRect.Y/*, imageRect.Width, imageRect.Height*/);

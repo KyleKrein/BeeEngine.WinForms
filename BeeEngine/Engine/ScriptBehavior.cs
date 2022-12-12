@@ -1,8 +1,9 @@
 using BeeEngine.Drawing;
 using BeeEngine.Vector;
-
+using System.Text.Json;
 namespace BeeEngine
 {
+    [Serializable]
     public abstract class ScriptBehavior: Component
     {
         public GameObject GameObject { get;}

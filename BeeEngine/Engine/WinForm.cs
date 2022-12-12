@@ -1,4 +1,5 @@
 ﻿using BeeEngine.Drawing;
+using GameEngine2D;
 using Timer = System.Timers.Timer;
 
 namespace BeeEngine;
@@ -173,8 +174,8 @@ public sealed class WinForm : Form
         RenderingQueue.Render(FrameFastGFX);
         base.OnPaint(e);
 #else
-
-        Camera.GoToWORK();
+        Camera.Cameras.ForEach(camera => {camera.GoToWORK();});
+        //Camera.GoToWORK();
         _renderingQueue.Render(FrameFastGFX);
         Paint();
         base.OnPaint(new PaintEventArgs(FrameGFX, ClientRectangle));

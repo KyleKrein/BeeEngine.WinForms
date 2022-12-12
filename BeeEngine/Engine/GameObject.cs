@@ -19,6 +19,7 @@ public abstract class GameObject : Component, ICloneable, IEquatable<GameObject>
     private readonly IComponentCollection _childComponents = new ComponentCollection();
     public bool Enabled { get; private set; } = true;
     internal bool AutoManage { get; private set; }
+    internal ScriptBehavior Script { get; set; }
 
     protected GameObject()
     {
