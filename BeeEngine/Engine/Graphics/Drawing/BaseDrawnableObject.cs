@@ -6,7 +6,7 @@
 
         public BaseDrawnableObject()
         {
-            Transform = new Transform(this);
+            
         }
         public bool IsDrawn { get; private set; }
         public virtual void Show()

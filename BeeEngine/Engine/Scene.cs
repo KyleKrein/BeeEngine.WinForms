@@ -2,7 +2,7 @@
 
 namespace BeeEngine.Engine
 {
-    public sealed class Scene : GameObject
+    public sealed class Scene
     {
         private List<GameObject> _gameObjects = new List<GameObject>();
         private List<Sprite2D> _sprites = new List<Sprite2D>();
@@ -33,11 +33,6 @@ namespace BeeEngine.Engine
 
         internal async Task UnloadAsync()
         {
-        }
-
-        private void Start()
-        {
-            Tag = "Scene";
         }
 
         private void Update()

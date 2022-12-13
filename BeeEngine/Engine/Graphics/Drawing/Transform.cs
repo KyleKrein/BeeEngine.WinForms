@@ -32,7 +32,7 @@ namespace BeeEngine.Drawing
         {
             this._position += a;
         }
-        public BaseDrawnableObject ParentObject { get; private set; }
+        public GameObject ParentObject { get; private set; }
 
         public float X => _position.X;
         public float Y => _position.Y;
@@ -41,13 +41,20 @@ namespace BeeEngine.Drawing
         public float ScaleY => _scale.Y;
         public float ScaleZ => _scale.Z;
 
-        public Transform(BaseDrawnableObject parentObject)
+        public Transform(GameObject parentObject)
         {
             ParentObject = parentObject ?? throw new ArgumentNullException("parentObject");
         }
         private Transform()
         {
 
+        }
+
+        internal Transform(Transform transform, GameObject gameObject): this(gameObject)
+        {
+            _eulerAngles = transform._eulerAngles;
+            _scale = transform._scale;
+            _position = transform._position;
         }
         internal static Transform Empty
         {

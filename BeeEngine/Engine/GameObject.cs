@@ -9,41 +9,61 @@ namespace BeeEngine;
 /// OnEnable, OnDisable methods if needed
 /// </summary>
 [Serializable]
-public abstract class GameObject : Component, ICloneable, IEquatable<GameObject>, IDisposable
+public sealed class GameObject : Component, ICloneable, IEquatable<GameObject>, IDisposable
 {
     private bool disposedValue;
-
-    public virtual string Name { get; set; } = "";
-    public virtual string Tag { get; set; } = "";
+    
+    public string Name { get; set; } = "";
+    public string Tag { get; set; } = "";
     private static readonly IComponentCollection ComponentsCollection = new ComponentCollection();
     private readonly IComponentCollection _childComponents = new ComponentCollection();
     public bool Enabled { get; private set; } = true;
     internal bool AutoManage { get; private set; }
-    internal ScriptBehavior Script { get; set; }
+    internal Behavior? Script { get; private set; }
+    
+    public Transform Transform { get; set; }
 
-    protected GameObject()
+    internal GameObject()
     {
+        Transform = new Transform(this);
         AddGameObject();
     }
 
-    protected GameObject(bool autoManageEnabled)
+    internal GameObject(bool autoManageEnabled)
     {
         AutoManage = autoManageEnabled;
         AddGameObject();
     }
 
-    protected GameObject(GameObject gameObject)
+    internal GameObject(GameObject gameObject)
     {
         Name = (string)gameObject.Name.Clone();
         Tag = (string)gameObject.Tag.Clone();
+        AssignScript(gameObject.Script?.GetType());
         AddGameObject();
     }
-    protected T? GetComponent<T>() where T : Component
+
+    internal void AssignScript(Type? behaviorType)
+    {
+        if (behaviorType is null)
+        {
+            Script = null;
+            return;
+        }
+
+        var behavior = (Behavior) Activator.CreateInstance(behaviorType)!;
+        if (behavior is null)
+            throw new InvalidOperationException($"{nameof(behaviorType)} must NOT reassign constructor");
+        
+        behavior.GameObject = this;
+        Script = behavior;
+    }
+    internal static T? GetComponent<T>() where T : Component
     {
         return ComponentsCollection.GetComponent<T>();
     }
 
-    protected IEnumerable<T> GetComponents<T>() where T : Component
+    internal static IEnumerable<T> GetComponents<T>() where T : Component
     {
         return ComponentsCollection.GetComponents<T>();
     }
@@ -81,7 +101,7 @@ public abstract class GameObject : Component, ICloneable, IEquatable<GameObject>
     {
         if (!Enabled)
         {
-            this.Invoke("OnEnable");
+            Script.Invoke("OnEnable");
             Enabled = true;
         }
     }
@@ -90,7 +110,7 @@ public abstract class GameObject : Component, ICloneable, IEquatable<GameObject>
     {
         if (Enabled)
         {
-            this.Invoke("OnDisable");
+            Script.Invoke("OnDisable");
             Enabled = false;
         }
     }
@@ -132,10 +152,6 @@ public abstract class GameObject : Component, ICloneable, IEquatable<GameObject>
         return MemberwiseClone();
     }
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    protected virtual void OnDispose()
-    {
-    }
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool Equals(GameObject? other)
     {
         return Name == other?.Name && Tag == other?.Tag && Id == other?.Id;
@@ -145,10 +161,6 @@ public abstract class GameObject : Component, ICloneable, IEquatable<GameObject>
     {
         if (!disposedValue)
         {
-            if (disposing)
-            {
-                OnDispose();
-            }
             RemoveGameObject();
             Log.Debug($"Игровой объект {Name} уничтожен");
             disposedValue = true;

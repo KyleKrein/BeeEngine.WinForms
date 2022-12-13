@@ -125,7 +125,6 @@ namespace BeeEngine.Drawing
 			_gcHandle = GCHandle.Alloc(_pArray, GCHandleType.Pinned);
 			Marshal.Copy(bitmap.Scan0, _pArray, 0, _width * _height);
 			SetDIBitsToDevice(hRef, 0, 0, _width, _height, 0, 0, 0, _height, ref _pArray[0], ref _BI, 0);
-			Console.WriteLine(_pArray[0]);
 			if (_gcHandle.IsAllocated)
 				_gcHandle.Free();
 		}
