@@ -21,12 +21,12 @@ namespace BeeEngine.Drawing
         /// <summary>
         /// The BitmapData resulted from the lock operation
         /// </summary>
-        private BitmapData _bitmapData;
+        internal BitmapData _bitmapData;
 
         /// <summary>
         /// The first pixel of the bitmap
         /// </summary>
-        private int* _scan0;
+        internal int* _scan0;
 
         /// <summary>
         /// Gets the width of this FastBitmap object
@@ -650,15 +650,22 @@ namespace BeeEngine.Drawing
             {
                 throw new ArgumentException(@"Copying regions across the same bitmap is not supported", nameof(source));
             }
+            
 
             var srcBitmapRect = new Rectangle(0, 0, source.Width, source.Height);
             var destBitmapRect = new Rectangle(0, 0, Width, Height);
+            
 
             // Check if the rectangle configuration doesn't generate invalid states or does not affect the target image
             if (srcRect.Width <= 0 || srcRect.Height <= 0 || destRect.Width <= 0 || destRect.Height <= 0 ||
                 !srcBitmapRect.IntersectsWith(srcRect) || !destRect.IntersectsWith(destBitmapRect))
                 return;
-
+            // If the copy operation results in an entire copy, use CopyPixels instead
+            if (srcBitmapRect == srcRect && destBitmapRect == destRect && srcBitmapRect == destBitmapRect)
+            {
+                CopyPixels(source);
+                return;
+            }
             // Find the areas of the first and second bitmaps that are going to be affected
             srcBitmapRect = Rectangle.Intersect(srcRect, srcBitmapRect);
 
@@ -960,6 +967,109 @@ namespace BeeEngine.Drawing
                 }
             }
         }
+        public void DrawRegion(Bitmap source, Rectangle srcRect, Rectangle destRect)
+        {
+
+            // Throw exception when trying to copy same bitmap over
+            if (source == _bitmap)
+            {
+                throw new ArgumentException(@"Copying regions across the same bitmap is not supported", nameof(source));
+            }
+
+            var srcBitmapRect = new Rectangle(0, 0, source.Width, source.Height);
+            var destBitmapRect = new Rectangle(0, 0, Width, Height);
+
+            // Check if the rectangle configuration doesn't generate invalid states or does not affect the target image
+            if (srcRect.Width <= 0 || srcRect.Height <= 0 || destRect.Width <= 0 || destRect.Height <= 0 ||
+                !srcBitmapRect.IntersectsWith(srcRect) || !destRect.IntersectsWith(destBitmapRect))
+                return;
+
+            // Find the areas of the first and second bitmaps that are going to be affected
+            srcBitmapRect = Rectangle.Intersect(srcRect, srcBitmapRect);
+
+            // Clip the source rectangle on top of the destination rectangle in a way that clips out the regions of the original bitmap
+            // that will not be drawn on the destination bitmap for being out of bounds
+            srcBitmapRect = Rectangle.Intersect(srcBitmapRect, new Rectangle(srcRect.X, srcRect.Y, destRect.Width, destRect.Height));
+
+            destBitmapRect = Rectangle.Intersect(destRect, destBitmapRect);
+
+            // Clip the source bitmap region yet again here
+            srcBitmapRect = Rectangle.Intersect(srcBitmapRect, new Rectangle(-destRect.X + srcRect.X, -destRect.Y + srcRect.Y, Width, Height));
+
+            // Calculate the rectangle containing the maximum possible area that is supposed to be affected by the copy region operation
+            int copyWidth = srcBitmapRect.Width.Min(destBitmapRect.Width);
+            int copyHeight = srcBitmapRect.Height.Min(destBitmapRect.Height);
+
+            if (copyWidth == 0 || copyHeight == 0)
+                return;
+
+            int srcStartX = srcBitmapRect.Left;
+            int srcStartY = srcBitmapRect.Top;
+
+            int destStartX = destBitmapRect.Left;
+            int destStartY = destBitmapRect.Top;
+            using (FastBitmap fastSource = source.FastLock())
+            {
+
+                byte* dstPointer = (byte*)_scan0;
+                byte* srcPointer = (byte*)fastSource._scan0;
+
+                for (int y = 0; y < copyHeight; y++)
+                {
+                    int destX = destStartX;
+                    int destY = destStartY + y;
+
+                    int srcX = srcStartX;
+                    int srcY = srcStartY + y;
+
+                    int offsetSrc = (srcX + srcY * fastSource.Stride);
+                    int offsetDest = (destX + destY * Stride);
+                    srcPointer = (byte*)(fastSource._scan0 + offsetSrc);
+                    dstPointer = (byte*)(_scan0 + offsetDest);
+                    for (int x = 0; x < copyWidth; x++)
+                    {
+                        if (srcPointer[3] != 0)
+                        {
+                            if (srcPointer[3] != byte.MaxValue)
+                            {
+                                //var LabSRC = RGBToLab(new Vector4(srcPointer[0], srcPointer[1], srcPointer[2], srcPointer[3]));
+                                //var LabDST = RGBToLab(new Vector4(dstPointer[0], dstPointer[1], dstPointer[2], dstPointer[3]));
+                                //var FinalRGB = LabtoRGB(new Vector4((LabSRC.X + LabDST.X)/2, (LabSRC.Y + LabDST.Y) / 2, (LabSRC.Z + LabDST.Z) / 2, (LabSRC.W + LabDST.W) / 2));
+                                byte blue = (byte)((srcPointer[0]  + dstPointer[0]) / 2);
+                                byte green = (byte)((srcPointer[1] + dstPointer[1]) / 2);
+                                byte red = (byte)((srcPointer[2] + dstPointer[2]) / 2);
+                                byte alpha = (byte)((srcPointer[3] + dstPointer[3]) / 2);
+                                dstPointer[0] = blue;  //(byte)FinalRGB.X;
+                                dstPointer[1] = green; //(byte)FinalRGB.Y;
+                                dstPointer[2] = red; //(byte)FinalRGB.Z;
+                                dstPointer[3] = alpha; //(byte)FinalRGB.W;
+                            }
+                            else
+                            {
+                                dstPointer[0] = srcPointer[0]; // Blue
+                                dstPointer[1] = srcPointer[1]; // Green
+                                dstPointer[2] = srcPointer[2]; // Red
+                                dstPointer[3] = srcPointer[3]; // Alpha
+                            }
+                        }
+                        
+
+                        srcPointer += BytesPerPixel;
+                        dstPointer += BytesPerPixel;
+                    }
+
+                }
+            }
+        }
+
+        private void CopyPixels(Bitmap source)
+        {
+            using (FastBitmap fastSource = source.FastLock())
+            {
+                memcpy(Scan0, fastSource.Scan0,
+                    (ulong) (fastSource.Height * fastSource.Stride * BytesPerPixel));
+            }
+        }
 
         /// <summary>
         /// Performs a copy operation of the pixels from the Source bitmap to the Target bitmap.
@@ -1094,6 +1204,23 @@ namespace BeeEngine.Drawing
                 fastTarget.CopyRegion(source, srcRect, destRect);
             }
         }
+        /*public void CopyRegion(Bitmap source, Rectangle srcRect, Rectangle destRect)
+        {
+            var srcBitmapRect = new Rectangle(0, 0, source.Width, source.Height);
+            var destBitmapRect = new Rectangle(0, 0, Width, Height);
+
+            // If the copy operation results in an entire copy, use CopyPixels instead
+            if (srcBitmapRect == srcRect && destBitmapRect == destRect && srcBitmapRect == destBitmapRect)
+            {
+                CopyPixels(source, _bitmap);
+                return;
+            }
+
+            using (var fastTarget = target.FastLock())
+            {
+                fastTarget.CopyRegion(source, srcRect, destRect);
+            }
+        }*/
 
         /// <summary>
         /// Returns a bitmap that is a slice of the original provided 32bpp Bitmap.

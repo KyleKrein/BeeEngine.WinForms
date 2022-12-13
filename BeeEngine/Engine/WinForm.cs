@@ -66,9 +66,10 @@ public sealed class WinForm : Form
         {
             lock (RazorLock)
             {
-                if (FrameGFX != null) FrameGFX.Dispose();
-                if (FrameBMP != null) FrameBMP.Dispose();
-                if (FrameFastGFX != null) FrameFastGFX.Dispose();
+                
+                FrameFastGFX?.Dispose();
+                FrameGFX?.Dispose();
+                FrameBMP?.Dispose();
                 FrameBMP = new Bitmap(ClientSize.Width, ClientSize.Height, PixelFormat.Format32bppArgb);
                 FrameGFX = Graphics.FromImage(FrameBMP);
                 FrameFastGFX = FastGraphics.FromImage(FrameBMP, FrameGFX);
@@ -151,6 +152,11 @@ public sealed class WinForm : Form
 
     private void Paint()
     {
+        if (FrameFastGFX.Locked)
+        {
+            RP.PaintLocked(hDCRef,FrameFastGFX._fastBitmap);
+            return;
+        }
         RP.Paint(hDCRef, FrameBMP);
     }
 

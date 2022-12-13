@@ -10,7 +10,8 @@ namespace BeeEngine.Drawing
     {
         private Graphics? _winFormGraphics;
         private Transform _transform;
-        public ResamplingFilters ResamplingFilter
+        internal FastBitmap _fastBitmap;
+        /*public ResamplingFilters ResamplingFilter
         {
             get
             {
@@ -25,7 +26,7 @@ namespace BeeEngine.Drawing
                 _resamplingService ??= new ResamplingService();
                 _resamplingService.Filter = value;
             }
-        }
+        }*/
         public Graphics WinFormGraphics
         {
             get { return _winFormGraphics ??= Graphics.FromImage(_bitmap); }
@@ -35,8 +36,9 @@ namespace BeeEngine.Drawing
         private void Init()
         {
             _transform = Transform.Empty;
+            _fastBitmap = new FastBitmap(_bitmap);
         }
-        internal void Resize(int width, int height, ResamplingFilters filter)
+        /*internal void Resize(int width, int height, ResamplingFilters filter)
         {
             _resamplingService.Filter = filter;
             _bitmap = _resamplingService.Resample(_bitmap.ToArray(), width, height).ConvertArrayToBitmap();
@@ -71,7 +73,7 @@ namespace BeeEngine.Drawing
         internal static Bitmap ResizeAndGet(Bitmap bmp, int width, int height)
         {
             return ResizeAndGet(bmp, width, height, ResamplingFilters.CubicBSpline);
-        }
+        }*/
         public static FastGraphics FromImage(Bitmap image)
         {
             return new FastGraphics(image);
@@ -90,7 +92,7 @@ namespace BeeEngine.Drawing
             DrawImage(temp, new Rectangle(0, 0, width, height), new Rectangle(x, y, width, height), transparency);
         }
 
-        public void DrawImage(Bitmap image, int x, int y, int width, int height, Transparency transparency = Transparency.Semi)
+        /*public void DrawImage(Bitmap image, int x, int y, int width, int height, Transparency transparency = Transparency.Semi)
         {
             Bitmap temp = image;
             if(temp.Width!=width || temp.Height!=height)
@@ -99,6 +101,7 @@ namespace BeeEngine.Drawing
             }
             DrawImage(temp, new Rectangle(0, 0, width, height), new Rectangle(x, y, width, height), transparency);
         }
+        */
 
         public void DrawImage(Bitmap image, Rectangle position, Transparency transparency = Transparency.Semi)
         {
@@ -111,6 +114,9 @@ namespace BeeEngine.Drawing
             Rectangle changedRect = new Rectangle(newPositionRect.X, newPositionRect.Y, newPositionRect.Width, newPositionRect.Height);
             changedRect.X += (int)(_transform.X * _transform.ScaleX);
             changedRect.Y += (int)(_transform.Y * _transform.ScaleY);
+            /*Rectangle target = new Rectangle((int) _transform.X, (int) _transform.Y, _fastBitmap.Width, _fastBitmap.Height);
+            if(!changedRect.IntersectsWith(target))
+                return;*/
             if (IsFrameGraphics)
             {
                 if (HandleFrameGraphics(image, imageRect, newPositionRect, changedRect))
@@ -140,11 +146,12 @@ namespace BeeEngine.Drawing
                     DrawSemiTransparentImage(image, changedRect.X, changedRect.Y);
                     break;
                 case Transparency.Has:
-                    if(_bitmap!=null)
-                    {
-                        FastBitmap.DrawRegion(image, _bitmap, imageRect, changedRect);
-                        return;
-                    }
+#if !MAC
+                    SetNewGraphics();
+                    _fastBitmap.DrawRegion(image, imageRect, changedRect);
+                    //FastBitmap.DrawRegion(image, _bitmap, imageRect, changedRect);
+                    return;
+#endif
                     DrawSemiTransparentImage(image, changedRect.X, changedRect.Y);
                     break;
             }
@@ -174,6 +181,7 @@ namespace BeeEngine.Drawing
             //temp = ResamplingService.Resample(image.ToArray(), imageRect.Width, imageRect.Height).ConvertArrayToBitmap();
             //ResamplingService.Resample(image, imageRect.Width, imageRect.Height);
             //temp = new Bitmap(imageRect.Width, imageRect.Height);
+            SetOldGraphics();
             Camera.Cameras.ForEach(camera => camera.Move(WinFormGraphics));/*.Move(WinFormGraphics);*/
             WinFormGraphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
             WinFormGraphics.PixelOffsetMode = PixelOffsetMode.HighSpeed;
@@ -196,7 +204,7 @@ namespace BeeEngine.Drawing
         {
             CopyImage(image, new Rectangle(0, 0, image.Width, image.Height), new Rectangle(x, y, width, height));
         }
-        ResamplingService? _resamplingService;
+        //ResamplingService? _resamplingService;
         internal void CopyImage(Bitmap image, Rectangle position)
         {
             CopyImage(image, new Rectangle(0, 0, image.Width, image.Height), position);
@@ -205,8 +213,10 @@ namespace BeeEngine.Drawing
         internal void CopyImage(Bitmap image, Rectangle imageRect, Rectangle newPositionRect)
         {
 #if !MAC
-            FastBitmap.CopyRegion(image, _bitmap, imageRect, newPositionRect);
+            SetNewGraphics();
+            _fastBitmap.CopyRegion(image, imageRect, newPositionRect);
 #else
+            SetOldGraphics();
             WinFormGraphics.CompositingMode = CompositingMode.SourceCopy;
             WinFormGraphics.CompositingQuality = CompositingQuality.HighSpeed;
             WinFormGraphics.DrawImage(image, newPositionRect.X, newPositionRect.Y);
@@ -215,26 +225,28 @@ namespace BeeEngine.Drawing
 #endif
         }
 
-        public void DrawAndScaleImage(Bitmap image, int x, int y, int newWidth, int newHeight)
+        /*public void DrawAndScaleImage(Bitmap image, int x, int y, int newWidth, int newHeight)
         {
             WinFormGraphics.DrawImage(image, x, y, newWidth, newHeight);
-        }
+        }*/
 
         internal void DrawSemiTransparentImage(Bitmap image, int x, int y)
         {
             //WinFormGraphics.CompositingMode = CompositingMode.SourceOver;
+            SetOldGraphics();
             WinFormGraphics.DrawImage(image, x, y);
         }
-        internal void DrawSemiTransparentImage(Bitmap image, int x, int y, int newWidth, int newHeight)
+        /*internal void DrawSemiTransparentImage(Bitmap image, int x, int y, int newWidth, int newHeight)
         {
             WinFormGraphics.DrawImage(image, x, y, newWidth, newHeight);
-        }
+        }*/
 
         public void Clear(Color color)
         {
 #if !MAC
-            FastBitmap.ClearBitmap(_bitmap, color);
+            _fastBitmap.Clear(color);
 #else
+            SetOldGraphics();
             WinFormGraphics.Clear(color);
 #endif
         }
@@ -256,12 +268,12 @@ namespace BeeEngine.Drawing
             Init();
         }
 
-        private FastGraphics(Graphics graphics)
+        /*private FastGraphics(Graphics graphics)
         {
             _winFormGraphics= graphics;
             _bitmap = null;
             Init();
-        }
+        }*/
 
         private void Dispose(bool disposing)
         {
@@ -269,36 +281,23 @@ namespace BeeEngine.Drawing
             {
                 if (disposing)
                 {
-                    if (WinFormGraphics != null)
-                        WinFormGraphics.Dispose();
+                    _fastBitmap?.Dispose();
+                    _winFormGraphics?.Dispose();
                     _bitmap = null;
-
-                    // TODO: освободить управляемое состояние (управляемые объекты)
                 }
-
-                // TODO: освободить неуправляемые ресурсы (неуправляемые объекты) и переопределить метод завершения
-                // TODO: установить значение NULL для больших полей
                 disposedValue = true;
             }
         }
 
-        // // TODO: переопределить метод завершения, только если "Dispose(bool disposing)" содержит код для освобождения неуправляемых ресурсов
-        // ~FastGraphics()
-        // {
-        //     // Не изменяйте этот код. Разместите код очистки в методе "Dispose(bool disposing)".
-        //     Dispose(disposing: false);
-        // }
-
         public void Dispose()
         {
-            // Не изменяйте этот код. Разместите код очистки в методе "Dispose(bool disposing)".
             Dispose(disposing: true);
         }
 
-        internal static FastGraphics FromGraphics(Graphics graphics)
+        /*internal static FastGraphics FromGraphics(Graphics graphics)
         {
             return new FastGraphics(graphics);
-        }
+        }*/
 
         public void ResetTransform()
         {
@@ -320,5 +319,38 @@ namespace BeeEngine.Drawing
         {
             _transform.ScaleTransform(x);
         }
+
+
+        private void SetOldGraphics()
+        {
+            if(_fastBitmap.Locked)
+                _fastBitmap.Unlock();
+        }
+
+        private void SetNewGraphics()
+        {
+            if(!_fastBitmap.Locked)
+                _fastBitmap.Lock();
+        }
+
+        public void Lock()
+        {
+            _fastBitmap.Lock();
+        }
+        public void Unlock()
+        {
+            _fastBitmap.Lock();
+        }
+
+        public Color GetPixel(int x, int y)
+        {
+            return _fastBitmap.GetPixel(x, y);
+        }
+        public void SetPixel(int x, int y, Color color)
+        {
+            _fastBitmap.SetPixel(x, y, color);
+        }
+
+        public bool Locked => _fastBitmap.Locked;
     }
 }

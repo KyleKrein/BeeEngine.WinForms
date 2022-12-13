@@ -106,5 +106,28 @@ namespace BeeEngine.Drawing
 			if (_gcHandle.IsAllocated)
 				_gcHandle.Free();
 		}
+		public void PaintLocked(HandleRef hRef, FastBitmap bitmap)
+		{
+			if (bitmap == null || bitmap.Width == 0 || bitmap.Height == 0)
+			{
+				return;
+			}
+
+			/*if (bitmap.PixelFormat != PixelFormat.Format32bppArgb)
+			{
+				Console.WriteLine("PixelFormat must be Format32bppArgb at Paint() in RazorPainter");
+				return;
+			}*/
+
+			if (bitmap.Width != _width || bitmap.Height != _height)
+				Realloc(bitmap.Width, bitmap.Height);
+
+			_gcHandle = GCHandle.Alloc(_pArray, GCHandleType.Pinned);
+			Marshal.Copy(bitmap.Scan0, _pArray, 0, _width * _height);
+			SetDIBitsToDevice(hRef, 0, 0, _width, _height, 0, 0, 0, _height, ref _pArray[0], ref _BI, 0);
+			Console.WriteLine(_pArray[0]);
+			if (_gcHandle.IsAllocated)
+				_gcHandle.Free();
+		}
     }
 }
