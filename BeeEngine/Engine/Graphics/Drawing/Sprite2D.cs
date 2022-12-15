@@ -23,7 +23,7 @@ namespace BeeEngine.Drawing
         private bool _disposedValue;
         private int _frameCount;
         private Bitmap[] _frames;
-
+        
         //TODO:доделать луп
         public bool Loop = false;
 
@@ -48,7 +48,8 @@ namespace BeeEngine.Drawing
             Scale = scale;
             Directory = directory;
             Tag = tag;
-            Sprite = new Bitmap(_image!, (int) Scale.X, (int) Scale.Y);
+            Texture = new Texture(new Bitmap(_image, (int) this.Scale.X, (int) this.Scale.Y));            this.Priority = Priority;
+
             if (show)
             {
                 Show();
@@ -60,7 +61,8 @@ namespace BeeEngine.Drawing
             Position = position;
             Scale = scale;
             Tag = tag;
-            Sprite = new Bitmap(image, (int) Scale.X, (int) Scale.Y);
+            Texture = new Texture(new Bitmap(image, (int) this.Scale.X, (int) this.Scale.Y));            this.Priority = Priority;
+
             if (show)
             {
                 Show();
@@ -72,7 +74,9 @@ namespace BeeEngine.Drawing
             this.Position = Position;
             Scale = new Vector2(image.Width, image.Height);
             this.Tag = Tag;
-            Sprite = new Bitmap(image);
+            Texture = new Texture(new Bitmap(image));            
+            this.Priority = Priority;
+
             if (show)
             {
                 Show();
@@ -86,7 +90,7 @@ namespace BeeEngine.Drawing
             this.Directory = Directory;
             this.Tag = Tag;
 
-            Sprite = new Bitmap(_image, (int) this.Scale.X, (int) this.Scale.Y);
+            Texture = new Texture(new Bitmap(_image, (int) this.Scale.X, (int) this.Scale.Y));            this.Priority = Priority;
             this.Priority = Priority;
             if (Show)
             {
@@ -99,7 +103,7 @@ namespace BeeEngine.Drawing
             this.Position = Position;
             this.Scale = Scale;
             this.Tag = Tag;
-            Sprite = new Bitmap(image, (int) this.Scale.X, (int) this.Scale.Y);
+            Texture = new Texture(new Bitmap(image, (int) this.Scale.X, (int) this.Scale.Y));
 
             this.Priority = Priority;
             if (Show)
@@ -113,7 +117,7 @@ namespace BeeEngine.Drawing
             this.Position = Position;
             Scale = new Vector2(image.Width, image.Height);
             this.Tag = Tag;
-            Sprite = image;
+            Texture = new Texture(image);
             this.Priority = Priority;
 
             if (Show)
@@ -125,7 +129,16 @@ namespace BeeEngine.Drawing
         public Vector2 Position { get; private set; }
         public Vector2 Scale { get; private set; }
 
-        public Bitmap Sprite { get; private set; }
+        public Bitmap Sprite
+        {
+            get
+            {
+                if (started)
+                    return _image;
+                return Texture.GetImageToDraw((int) Scale.Y, (int) Scale.X);
+            }
+        }
+        public Texture Texture { get; private set; }
         //internal float camScale = Camera.Scale;
 
         public Transparency HasTransparency { get; set; } = Transparency.Semi;
@@ -255,8 +268,11 @@ namespace BeeEngine.Drawing
         public void ChangePos(Vector2 Position, Vector2 Scale)
         {
             this.Position = Position;
+            var oldScale = this.Scale;
             this.Scale = Scale;
-            Sprite = new Bitmap(_image, (int) this.Scale.X, (int) this.Scale.Y);
+            if(oldScale == Scale)
+                return;
+            Texture = new Texture(new Bitmap(_image, (int) this.Scale.X, (int) this.Scale.Y));
             //Log.Info($"Позиция и размер спрайта {tag} были изменены");
         }
 
@@ -267,7 +283,8 @@ namespace BeeEngine.Drawing
 
         public void ChangeImage(Bitmap image)
         {
-            Sprite = image;
+            Texture.Dispose();
+            Texture = new Texture(image);
         }
 
         protected Bitmap GetImageFromDirectory(string dir)
@@ -373,7 +390,7 @@ namespace BeeEngine.Drawing
             useArray = false;
 #if !MAC
             //Logger.Info($"Can animate: {ImageAnimator.CanAnimate(gifImage)}");
-            Sprite = gifImage;
+            _image = gifImage;
             _frameCount = gifImage.GetFrameCount(new FrameDimension(gifImage.FrameDimensionsList[0]));
             ImageAnimator.Animate(Sprite, null);
             AnimateSprite();
@@ -477,7 +494,7 @@ namespace BeeEngine.Drawing
         {
             if (useArray)
             {
-                Sprite = _frames[_animIndex];
+                _image = _frames[_animIndex];
             }
             else
             {
@@ -678,7 +695,7 @@ namespace BeeEngine.Drawing
 
                     InProgress.Clear();
                     _image?.Dispose();
-                    Sprite.Dispose();
+                    Texture.Dispose();
                     if (_frames != null)
                     {
                         foreach (Bitmap frame in _frames)
@@ -702,7 +719,7 @@ namespace BeeEngine.Drawing
         protected override void OnPaint(FastGraphics g)
         {
             //Update();
-            g.DrawImage(Sprite, (int) Position.X, (int) Position.Y, HasTransparency);
+            g.DrawImage(Texture, (int) Position.X, (int) Position.Y, HasTransparency);
             Paint?.Invoke(this, g);
             WeakPaint?.Invoke(this, g);
         }

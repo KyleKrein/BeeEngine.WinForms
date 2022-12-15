@@ -11,6 +11,8 @@ namespace BeeEngine.Drawing
         private Graphics? _winFormGraphics;
         private Transform _transform;
         internal FastBitmap _fastBitmap;
+
+        private Texture? _texture;
         /*public ResamplingFilters ResamplingFilter
         {
             get
@@ -74,6 +76,10 @@ namespace BeeEngine.Drawing
         {
             return ResizeAndGet(bmp, width, height, ResamplingFilters.CubicBSpline);
         }*/
+        public static FastGraphics FromTexture(Texture image)
+        {
+            return new FastGraphics(image);
+        }
         public static FastGraphics FromImage(Bitmap image)
         {
             return new FastGraphics(image);
@@ -90,6 +96,17 @@ namespace BeeEngine.Drawing
             int height = image.Height;
 
             DrawImage(temp, new Rectangle(0, 0, width, height), new Rectangle(x, y, width, height), transparency);
+        }
+        public void DrawImage(Texture texture, int x, int y, Transparency transparency = Transparency.Semi)
+        {
+            int width = texture.Width;
+            int height = texture.Height;
+
+            DrawImage(texture, new Rectangle(0, 0, width, height), new Rectangle(x, y, width, height), transparency);
+        }
+        public void DrawImage(Texture texture, int x, int y, int width, int height, Transparency transparency = Transparency.Semi)
+        {
+            DrawImage(texture, new Rectangle(0, 0, width, height), new Rectangle(x, y, width, height), transparency);
         }
 
         /*public void DrawImage(Bitmap image, int x, int y, int width, int height, Transparency transparency = Transparency.Semi)
@@ -109,21 +126,38 @@ namespace BeeEngine.Drawing
         }
 
         internal bool IsFrameGraphics = false;
+
+        public void DrawImage(Texture texture, Rectangle imageRect, Rectangle newPositionRect,
+            Transparency transparency = Transparency.Semi)
+        {
+            int width = (int) (texture.Width * _transform.ScaleX);
+            int height = (int) (texture.Height * _transform.ScaleY);
+            Bitmap imageToDraw = texture.GetImageToDraw(width, height);
+            newPositionRect.Width = width;
+            newPositionRect.Height = height;
+            imageRect.Width = width;
+            imageRect.Height = height;
+            DrawImage(imageToDraw, imageRect, newPositionRect, transparency);
+        }
+
         public void DrawImage(Bitmap image, Rectangle imageRect, Rectangle newPositionRect, Transparency transparency = Transparency.Semi)
         {
-            Rectangle changedRect = new Rectangle(newPositionRect.X, newPositionRect.Y, newPositionRect.Width, newPositionRect.Height);
+            newPositionRect.X = (int) (_transform.X + newPositionRect.X * _transform.ScaleX);
+            newPositionRect.Y = (int) (_transform.Y + newPositionRect.Y * _transform.ScaleY);
+            /*Rectangle changedRect = new Rectangle(newPositionRect.X, newPositionRect.Y, newPositionRect.Width, newPositionRect.Height);
             changedRect.X += (int)(_transform.X * _transform.ScaleX);
             changedRect.Y += (int)(_transform.Y * _transform.ScaleY);
+            */
             /*Rectangle target = new Rectangle((int) _transform.X, (int) _transform.Y, _fastBitmap.Width, _fastBitmap.Height);
             if(!changedRect.IntersectsWith(target))
                 return;*/
-            if (IsFrameGraphics)
+            /*if (IsFrameGraphics)
             {
                 if (HandleFrameGraphics(image, imageRect, newPositionRect, changedRect))
                 {
                     return;
                 }
-            }
+            }*/
             
             switch (transparency)
             {
@@ -132,7 +166,7 @@ namespace BeeEngine.Drawing
                     DrawSemiTransparentImage(image, changedRect.X, changedRect.Y);
 #else
 
-                    CopyImage(image, imageRect, changedRect);
+                    CopyImage(image, imageRect, newPositionRect);
 #endif
                     break;
                 case Transparency.Semi:
@@ -143,16 +177,16 @@ namespace BeeEngine.Drawing
 //                        return;
 //                    }
 //#endif
-                    DrawSemiTransparentImage(image, changedRect.X, changedRect.Y);
+                    DrawSemiTransparentImage(image, newPositionRect.X, newPositionRect.Y);
                     break;
                 case Transparency.Has:
 #if !MAC
                     SetNewGraphics();
-                    _fastBitmap.DrawRegion(image, imageRect, changedRect);
+                    _fastBitmap.DrawRegion(image, imageRect, newPositionRect);
                     //FastBitmap.DrawRegion(image, _bitmap, imageRect, changedRect);
                     return;
 #endif
-                    DrawSemiTransparentImage(image, changedRect.X, changedRect.Y);
+                    DrawSemiTransparentImage(image, newPositionRect.X, newPositionRect.Y);
                     break;
             }
         }
@@ -267,6 +301,12 @@ namespace BeeEngine.Drawing
             _bitmap = bitmap;
             Init();
         }
+        private FastGraphics(Texture texture)
+        {
+            _bitmap = texture.GetImageToDraw(texture.Width, texture.Height);
+            _texture = texture;
+            Init();
+        }
 
         /*private FastGraphics(Graphics graphics)
         {
@@ -285,13 +325,20 @@ namespace BeeEngine.Drawing
                     _winFormGraphics?.Dispose();
                     _bitmap = null;
                 }
+
+                _texture?.Invalidate();
                 disposedValue = true;
             }
         }
 
+        ~FastGraphics()
+        {
+            Dispose(false);
+        }
         public void Dispose()
         {
             Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
 
         /*internal static FastGraphics FromGraphics(Graphics graphics)

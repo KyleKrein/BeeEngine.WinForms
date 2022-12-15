@@ -6,6 +6,28 @@ namespace BeeEngine
     [Serializable]
     public abstract class Behavior: Component
     {
+        //FOR TEST PURPOSE ONLY
+        public Behavior()
+        {
+            AddBehavior();
+        }
+
+        ~Behavior()
+        {
+            RemoveBehavior();
+        }
+
+        private void RemoveBehavior()
+        {
+            
+        }
+
+        private void AddBehavior()
+        {
+            GameObject = new GameObject(this);
+            GameEngine.AddGameObject(GameObject);
+        }
+
         public GameObject GameObject { get; internal set; }
         
         protected GameObject Instantiate(GameObject gameObject)

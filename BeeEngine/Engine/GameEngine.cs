@@ -16,10 +16,10 @@ public abstract class GameEngine
     public static PixelOffsetMode UsePixelOffsetMode = PixelOffsetMode.Half;*/
 
     private readonly WeakCollection<GameObject> AllGameObjects = new WeakCollection<GameObject>();
-    private readonly WeakCollection<GameObject> UpdateGameObjects = new WeakCollection<GameObject>();
-    private readonly WeakCollection<GameObject> LateUpdateGameObjects = new WeakCollection<GameObject>();
-    private readonly WeakCollection<GameObject> FixedUpdateGameObjects = new WeakCollection<GameObject>();
-    private readonly List<GameObject> GameObjectsWaitingForInit = new List<GameObject>();
+    private readonly WeakCollection<Behavior> UpdateGameObjects = new WeakCollection<Behavior>();
+    private readonly WeakCollection<Behavior> LateUpdateGameObjects = new WeakCollection<Behavior>();
+    private readonly WeakCollection<Behavior> FixedUpdateGameObjects = new WeakCollection<Behavior>();
+    private readonly List<Behavior> GameObjectsWaitingForInit = new List<Behavior>();
 
     //private readonly CancellationTokenSource _cancellationGameLoop;
     //private readonly CancellationTokenSource _cancellationFixedGameLoop;
@@ -219,7 +219,8 @@ public abstract class GameEngine
     internal static void AddGameObject(GameObject gameObject)
     {
         GameApplication.Instance?.AllGameObjects.Add(gameObject);
-        GameApplication.Instance?.GameObjectsWaitingForInit.Add(gameObject);
+        if(gameObject.Script is not null)
+            GameApplication.Instance?.GameObjectsWaitingForInit.Add(gameObject.Script);
         /*AllGameObjects.Add(gm);
         GameObjectsWaitingForInit.Add(gm);*/
     }
@@ -228,15 +229,18 @@ public abstract class GameEngine
     internal static void RemoveGameObject(GameObject gameObject)
     {
         GameApplication.Instance?.AllGameObjects.Remove(gameObject);
-        GameApplication.Instance?.GameObjectsWaitingForInit.Remove(gameObject);
-        GameApplication.Instance?.UpdateGameObjects.Remove(gameObject);
-        GameApplication.Instance?.LateUpdateGameObjects.Remove(gameObject);
-        GameApplication.Instance?.FixedUpdateGameObjects.Remove(gameObject);
+        if(gameObject.Script is null)
+            return;
+        GameApplication.Instance?.GameObjectsWaitingForInit.Remove(gameObject.Script);
+        GameApplication.Instance?.UpdateGameObjects.Remove(gameObject.Script);
+        GameApplication.Instance?.LateUpdateGameObjects.Remove(gameObject.Script);
+        GameApplication.Instance?.FixedUpdateGameObjects.Remove(gameObject.Script);
     }
     public static void AddGameObject(GameObject gameObject, GameEngine gameInstance)
     {
         GameApplication.Instance?.AllGameObjects.Add(gameObject);
-        GameApplication.Instance?.GameObjectsWaitingForInit.Add(gameObject);
+        if(gameObject.Script is not null)
+            GameApplication.Instance?.GameObjectsWaitingForInit.Add(gameObject.Script);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -247,10 +251,12 @@ public abstract class GameEngine
         if (gameObject is null)
             throw new ArgumentNullException($"{nameof(gameObject)} can't be null");
         gameInstance.AllGameObjects.Remove(gameObject);
-        gameInstance.GameObjectsWaitingForInit.Remove(gameObject);
-        gameInstance.UpdateGameObjects.Remove(gameObject);
-        gameInstance.LateUpdateGameObjects.Remove(gameObject);
-        gameInstance.FixedUpdateGameObjects.Remove(gameObject);
+        if(gameObject.Script is null)
+            return;
+        gameInstance.GameObjectsWaitingForInit.Remove(gameObject.Script);
+        gameInstance.UpdateGameObjects.Remove(gameObject.Script);
+        gameInstance.LateUpdateGameObjects.Remove(gameObject.Script);
+        gameInstance.FixedUpdateGameObjects.Remove(gameObject.Script);
     }
 
     /// <summary>
@@ -302,12 +308,12 @@ public abstract class GameEngine
 
     private void FixedOneFrame()
     {
-        foreach (var gameObject in FixedUpdateGameObjects)
+        foreach (var script in FixedUpdateGameObjects)
         {
-            if (!gameObject.Enabled) continue;
-            if (!gameObject.Invoke("FixedUpdate"))
+            //if (!script.) continue;
+            if (!script.Invoke("FixedUpdate"))
             {
-                FixedUpdateGameObjects.Remove(gameObject);
+                FixedUpdateGameObjects.Remove(script);
             }
         }
 
@@ -319,7 +325,7 @@ public abstract class GameEngine
         OnUpdate();
         foreach (var gameObject in UpdateGameObjects)
         {
-            if (!gameObject.Enabled) continue;
+            //if (!gameObject.Enabled) continue;
             if (!gameObject.Invoke("Update"))
             {
                 UpdateGameObjects.Remove(gameObject);
@@ -331,7 +337,7 @@ public abstract class GameEngine
     {
         foreach (var gameObject in LateUpdateGameObjects)
         {
-            if (!gameObject.Enabled) continue;
+            //if (!gameObject.Enabled) continue;
             if (!gameObject.Invoke("LateUpdate"))
             {
                 LateUpdateGameObjects.Remove(gameObject);
@@ -348,7 +354,7 @@ public abstract class GameEngine
             UpdateGameObjects.Add(GameObjectsWaitingForInit[i]);
             LateUpdateGameObjects.Add(GameObjectsWaitingForInit[i]);
             FixedUpdateGameObjects.Add(GameObjectsWaitingForInit[i]);
-            Log.Debug($"Игровой объект {GameObjectsWaitingForInit[i].Tag}: {GameObjectsWaitingForInit[i].Name} создан");
+            //Log.Debug($"Игровой объект {GameObjectsWaitingForInit[i].Tag}: {GameObjectsWaitingForInit[i].Name} создан");
         }
         GameObjectsWaitingForInit.Clear();
     }

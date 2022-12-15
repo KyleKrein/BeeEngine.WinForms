@@ -28,6 +28,13 @@ public sealed class GameObject : Component, ICloneable, IEquatable<GameObject>, 
         Transform = new Transform(this);
         AddGameObject();
     }
+    //FOR TESTING ONLY
+    internal GameObject(Behavior script)
+    {
+        Transform = new Transform(this);
+        AssignScript(script);
+        //AddGameObject();
+    }
 
     internal GameObject(bool autoManageEnabled)
     {
@@ -55,6 +62,11 @@ public sealed class GameObject : Component, ICloneable, IEquatable<GameObject>, 
         if (behavior is null)
             throw new InvalidOperationException($"{nameof(behaviorType)} must NOT reassign constructor");
         
+        behavior.GameObject = this;
+        Script = behavior;
+    }
+    internal void AssignScript(Behavior behavior)
+    {
         behavior.GameObject = this;
         Script = behavior;
     }

@@ -1,6 +1,7 @@
 ﻿global using System.Drawing;
 global using System.Drawing.Drawing2D;
 using BeeEngine.Collections;
+using BeeEngine.Tasks;
 using GameEngine2D;
 
 namespace BeeEngine.Drawing
@@ -18,10 +19,23 @@ namespace BeeEngine.Drawing
             new WeakCollection<Sprite2D>()
         };
 
+        private readonly BackgroundTask invalidateTexturesTask;
         private readonly GameEngine _instance;
         public RenderingQueue(GameEngine instance)
         {
             _instance = instance;
+            invalidateTexturesTask = new BackgroundTask(TimeSpan.FromMilliseconds(20)
+                , () =>
+                {
+                    foreach (var spriteList in sprites)
+                    {
+                        foreach (var sprite in spriteList)
+                        {
+                            foreach (var b in sprite.Texture.HandleInvalidation());
+                        }
+                    }
+                });
+            invalidateTexturesTask.Start();
         }
         internal void Render(FastGraphics g)
         {
@@ -54,6 +68,7 @@ namespace BeeEngine.Drawing
 
         public void Dispose()
         {
+            invalidateTexturesTask.StopAsync();
             foreach (var spriteList in sprites)
             {
                 for (int i = 0; i < spriteList.Count; i++)
